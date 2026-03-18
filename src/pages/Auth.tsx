@@ -50,15 +50,31 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
       // Ensure the token is ready for the first API call
       await user.getIdToken(true);
       
-      // Sync profile to backend
-      await userApi.create({
-        uid: user.uid,
-        name: user.displayName || 'Anonymous',
-        email: user.email,
-        role: 'USER',
-        profileImage: user.photoURL,
-        createdAt: new Date().toISOString(),
-      });
+      try {
+        // Check if profile exists first
+        const existingProfile = await userApi.getByUid(user.uid);
+        if (existingProfile) {
+          navigate('/dashboard');
+          return;
+        }
+      } catch (e) {
+        // If profile not found (likely 404), continue to create
+        console.log("No profile found, creating new one...");
+      }
+
+      // Sync profile to backend ONLY if not found or on registration first-time
+      try {
+        await userApi.create({
+          uid: user.uid,
+          name: user.displayName || 'Anonymous',
+          email: user.email,
+          role: 'USER',
+          profileImage: user.photoURL,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (createError) {
+        console.error("Error creating profile, but proceeding to dashboard:", createError);
+      }
       
       navigate('/dashboard');
     } catch (err: any) {
