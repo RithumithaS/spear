@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { userApi } from '../services/api';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -30,12 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
-          const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (profileDoc.exists()) {
-            setProfile(profileDoc.data() as UserProfile);
+          const fetchedProfile = await userApi.getByUid(firebaseUser.uid);
+          if (fetchedProfile) {
+            setProfile(fetchedProfile as UserProfile);
           }
         } catch (error) {
-          console.error("Error fetching profile:", error);
+          console.error("Error fetching profile from backend:", error);
         }
       } else {
         setProfile(null);

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { jobApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, FileText, MapPin, Save, ArrowLeft, User } from 'lucide-react';
 
@@ -20,7 +19,7 @@ const JobNew: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, 'jobs'), {
+      await jobApi.create({
         title,
         description,
         roleRequired,

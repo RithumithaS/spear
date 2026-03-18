@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase';
-import { collection, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
+ // removed unused firestore imports
 import { motion } from 'motion/react';
 import { Users, Briefcase, MapPin, Sparkles, ArrowRight, TrendingUp, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { userApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, FileText, Code, Save, ArrowLeft } from 'lucide-react';
 
@@ -27,7 +26,7 @@ const ProfileEdit: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      await userApi.update(user.uid, {
         name,
         bio,
         skills: skills.split(',').map(s => s.trim()).filter(s => s !== ''),

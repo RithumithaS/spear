@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { db, auth } from '../firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { userApi, portfolioApi } from '../services/api';
 import { UserProfile, PortfolioItem } from '../types';
 import { motion } from 'motion/react';
 import { User, MapPin, Link as LinkIcon, Film, Play, Image as ImageIcon, Plus } from 'lucide-react';
@@ -22,22 +22,18 @@ const Profile: React.FC = () => {
   }, [userId]);
 
   const fetchProfile = async () => {
-    const docRef = doc(db, 'users', userId!);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      setProfile(docSnap.data() as UserProfile);
-    }
+    try {
+      const data = await userApi.getByUid(userId!);
+      if (data) setProfile(data as UserProfile);
+    } catch (e) { console.error("Error fetching profile", e); }
     setLoading(false);
   };
 
   const fetchPortfolio = async () => {
-    const q = query(collection(db, 'portfolios'), where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
-    const items: PortfolioItem[] = [];
-    querySnapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...doc.data() } as PortfolioItem);
-    });
-    setPortfolio(items);
+    try {
+      const data = await portfolioApi.getByUserId(userId!);
+      setPortfolio(data as PortfolioItem[]);
+    } catch (e) { console.error("Error fetching portfolio", e); }
   };
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;

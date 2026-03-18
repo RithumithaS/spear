@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { locationApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, DollarSign, Save, ArrowLeft, Image as ImageIcon, FileText } from 'lucide-react';
 
@@ -20,7 +19,7 @@ const LocationNew: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, 'locations'), {
+      await locationApi.create({
         name,
         address,
         pricePerDay: Number(pricePerDay),

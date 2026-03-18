@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { db, auth } from '../firebase';
-import { collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { userApi, connectionApi } from '../services/api';
 import { UserProfile, Connection } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, UserPlus, Check, X, MessageSquare, Search, Filter, User, Film } from 'lucide-react';
@@ -20,26 +20,14 @@ const Connections: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch all users except current
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const usersList: UserProfile[] = [];
-      usersSnap.forEach(doc => {
-        if (doc.id !== auth.currentUser?.uid) {
-          usersList.push(doc.data() as UserProfile);
-        }
-      });
-      setUsers(usersList);
-
-      // Fetch connections for current user
       if (auth.currentUser) {
-        const qSender = query(collection(db, 'connections'), where('senderId', '==', auth.currentUser.uid));
-        const qReceiver = query(collection(db, 'connections'), where('receiverId', '==', auth.currentUser.uid));
-        
-        const [senderSnap, receiverSnap] = await Promise.all([getDocs(qSender), getDocs(qReceiver)]);
-        const connList: Connection[] = [];
-        senderSnap.forEach(doc => connList.push({ id: doc.id, ...doc.data() } as Connection));
-        receiverSnap.forEach(doc => connList.push({ id: doc.id, ...doc.data() } as Connection));
-        setConnections(connList);
+        // Fetch all users except current
+        const usersList = await userApi.getAll(auth.currentUser.uid);
+        setUsers(usersList as UserProfile[]);
+
+        // Fetch connections for current user
+        const connList = await connectionApi.getUserConnections(auth.currentUser.uid);
+        setConnections(connList as Connection[]);
       }
     } catch (error) {
       console.error("Error fetching connections data:", error);
@@ -51,7 +39,7 @@ const Connections: React.FC = () => {
   const handleConnect = async (receiverId: string) => {
     if (!auth.currentUser) return;
     try {
-      await addDoc(collection(db, 'connections'), {
+      await connectionApi.send({
         senderId: auth.currentUser.uid,
         receiverId,
         status: 'PENDING',
@@ -65,9 +53,7 @@ const Connections: React.FC = () => {
 
   const handleAccept = async (connectionId: string) => {
     try {
-      await updateDoc(doc(db, 'connections', connectionId), {
-        status: 'ACCEPTED'
-      });
+      await connectionApi.accept(connectionId);
       fetchData();
     } catch (error) {
       console.error("Error accepting connection:", error);

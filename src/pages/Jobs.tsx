@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { db, auth } from '../firebase';
-import { collection, query, getDocs, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { jobApi, applicationApi } from '../services/api';
 import { JobPosting, JobApplication } from '../types';
 import { motion } from 'motion/react';
 import { Briefcase, MapPin, Search, Filter, Plus, Clock, CheckCircle, User } from 'lucide-react';
@@ -18,20 +18,21 @@ const Jobs: React.FC = () => {
   }, []);
 
   const fetchJobs = async () => {
-    const querySnapshot = await getDocs(collection(db, 'jobs'));
-    const items: JobPosting[] = [];
-    querySnapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...doc.data() } as JobPosting);
-    });
-    setJobs(items);
-    setLoading(false);
+    try {
+      const fetchResult = await jobApi.getAll();
+      setJobs(fetchResult as JobPosting[]);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleApply = async (jobId: string) => {
     if (!auth.currentUser) return;
     setApplying(jobId);
     try {
-      await addDoc(collection(db, 'applications'), {
+      await applicationApi.apply({
         userId: auth.currentUser.uid,
         jobId,
         status: 'APPLIED',
@@ -40,6 +41,7 @@ const Jobs: React.FC = () => {
       alert("Application submitted successfully!");
     } catch (error) {
       console.error("Error applying:", error);
+      alert("Error applying. You might have already applied.");
     } finally {
       setApplying(null);
     }

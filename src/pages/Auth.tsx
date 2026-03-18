@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { userApi } from '../services/api';
 import { motion } from 'motion/react';
 import { Film, Mail, Lock, User, ArrowRight, Github } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
     try {
       if (mode === 'register') {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
+        await userApi.create({
           uid: userCredential.user.uid,
           name,
           email,
@@ -47,15 +47,18 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      // Check if profile exists, if not create it
-      const profileDoc = await setDoc(doc(db, 'users', user.uid), {
+      // Ensure the token is ready for the first API call
+      await user.getIdToken(true);
+      
+      // Sync profile to backend
+      await userApi.create({
         uid: user.uid,
         name: user.displayName || 'Anonymous',
         email: user.email,
         role: 'USER',
         profileImage: user.photoURL,
         createdAt: new Date().toISOString(),
-      }, { merge: true });
+      });
       
       navigate('/dashboard');
     } catch (err: any) {

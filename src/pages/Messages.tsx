@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
-import { db, auth } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, addDoc, getDocs } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { messageApi } from '../services/api';
 import { ChatMessage, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'motion/react';
 import { Send, User, Search, MessageSquare } from 'lucide-react';
 
 const Messages: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [chats, setChats] = useState<UserProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -16,51 +15,53 @@ const Messages: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Fetch chat partners once
   useEffect(() => {
     if (user) {
       fetchChats();
     }
   }, [user]);
 
+  // Fallback to polling for messages since we removed real-time Firestore listener
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
     if (user && selectedUser) {
-      const q = query(
-        collection(db, 'messages'),
-        where('senderId', 'in', [user.uid, selectedUser.uid]),
-        where('receiverId', 'in', [user.uid, selectedUser.uid]),
-        orderBy('timestamp', 'asc')
-      );
+      fetchMessages(); // initial fetch
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const msgs: ChatMessage[] = [];
-        snapshot.forEach(doc => msgs.push({ id: doc.id, ...doc.data() } as ChatMessage));
-        setMessages(msgs);
-        setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-      });
-
-      return () => unsubscribe();
+      // Poll every 3 seconds
+      intervalId = setInterval(() => {
+        fetchMessages();
+      }, 3000);
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [user, selectedUser]);
 
   const fetchChats = async () => {
-    // In a real app, we'd fetch users we have messages with
-    // For now, let's fetch all users we are connected with
-    const q = query(collection(db, 'connections'), where('status', '==', 'ACCEPTED'));
-    const snap = await getDocs(q);
-    const userIds = new Set<string>();
-    snap.forEach(doc => {
-      const data = doc.data();
-      if (data.senderId === user?.uid) userIds.add(data.receiverId);
-      else if (data.receiverId === user?.uid) userIds.add(data.senderId);
-    });
-
-    const chatUsers: UserProfile[] = [];
-    for (const id of Array.from(userIds)) {
-      const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', id)));
-      userDoc.forEach(d => chatUsers.push(d.data() as UserProfile));
+    try {
+      if (!user) return;
+      const partners = await messageApi.getChatPartners(user.uid);
+      setChats(partners as UserProfile[]);
+    } catch (error) {
+      console.error("Error fetching chat partners:", error);
+    } finally {
+      setLoading(false);
     }
-    setChats(chatUsers);
-    setLoading(false);
+  };
+
+  const fetchMessages = async () => {
+    try {
+      if (!user || !selectedUser) return;
+      const msgs = await messageApi.getConversation(user.uid, selectedUser.uid);
+      setMessages(msgs as ChatMessage[]);
+      // Scroll smoothly to bottom on new messages
+      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -68,13 +69,14 @@ const Messages: React.FC = () => {
     if (!user || !selectedUser || !newMessage.trim()) return;
 
     try {
-      await addDoc(collection(db, 'messages'), {
+      await messageApi.send({
         senderId: user.uid,
         receiverId: selectedUser.uid,
         content: newMessage,
         timestamp: new Date().toISOString()
       });
       setNewMessage('');
+      fetchMessages(); // Optimistic refresh
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -100,7 +102,9 @@ const Messages: React.FC = () => {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {chats.length > 0 ? chats.map(chatUser => (
+              {loading ? (
+                <div className="p-4 text-center text-white/40">Loading chats...</div>
+              ) : chats.length > 0 ? chats.map(chatUser => (
                 <button
                   key={chatUser.uid}
                   onClick={() => setSelectedUser(chatUser)}

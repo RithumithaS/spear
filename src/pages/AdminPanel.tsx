@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { db, auth } from '../firebase';
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { userApi, jobApi, locationApi } from '../services/api';
 import { UserProfile, JobPosting, ShootingLocation } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'motion/react';
-import { Shield, Users, Briefcase, MapPin, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Users, Briefcase, MapPin, Trash2, AlertCircle } from 'lucide-react';
 
 const AdminPanel: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -24,23 +22,15 @@ const AdminPanel: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersSnap, jobsSnap, locsSnap] = await Promise.all([
-        getDocs(collection(db, 'users')),
-        getDocs(collection(db, 'jobs')),
-        getDocs(collection(db, 'locations'))
+      const [usersData, jobsData, locsData] = await Promise.all([
+        userApi.getAll(),
+        jobApi.getAll(),
+        locationApi.getAll()
       ]);
 
-      const usersList: UserProfile[] = [];
-      usersSnap.forEach(doc => usersList.push(doc.data() as UserProfile));
-      setUsers(usersList);
-
-      const jobsList: JobPosting[] = [];
-      jobsSnap.forEach(doc => jobsList.push({ id: doc.id, ...doc.data() } as JobPosting));
-      setJobs(jobsList);
-
-      const locsList: ShootingLocation[] = [];
-      locsSnap.forEach(doc => locsList.push({ id: doc.id, ...doc.data() } as ShootingLocation));
-      setLocations(locsList);
+      setUsers(usersData as UserProfile[]);
+      setJobs(jobsData as JobPosting[]);
+      setLocations(locsData as ShootingLocation[]);
     } catch (error) {
       console.error("Error fetching admin data:", error);
     } finally {
@@ -51,7 +41,13 @@ const AdminPanel: React.FC = () => {
   const handleDelete = async (collectionName: string, id: string) => {
     if (window.confirm(`Are you sure you want to delete this ${collectionName.slice(0, -1)}?`)) {
       try {
-        await deleteDoc(doc(db, collectionName, id));
+        if (collectionName === 'users') {
+          await userApi.delete(id);
+        } else if (collectionName === 'jobs') {
+          await jobApi.delete(id);
+        } else if (collectionName === 'locations') {
+          await locationApi.delete(id);
+        }
         fetchData();
       } catch (error) {
         console.error(`Error deleting from ${collectionName}:`, error);
@@ -104,7 +100,7 @@ const AdminPanel: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {activeTab === 'users' && users.map(user => (
+                  {activeTab === 'users' && users && users.map(user => (
                     <tr key={user.uid} className="hover:bg-white/5 transition-colors group">
                       <td className="px-8 py-6">
                         <div className="flex items-center space-x-3">
@@ -126,13 +122,13 @@ const AdminPanel: React.FC = () => {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <button className="p-2 text-white/20 hover:text-red-500 transition-colors">
+                        <button onClick={() => handleDelete('users', user.uid)} className="p-2 text-white/20 hover:text-red-500 transition-colors">
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </td>
                     </tr>
                   ))}
-                  {activeTab === 'jobs' && jobs.map(job => (
+                  {activeTab === 'jobs' && jobs && jobs.map(job => (
                     <tr key={job.id} className="hover:bg-white/5 transition-colors group">
                       <td className="px-8 py-6">
                         <div className="font-bold text-sm">{job.title}</div>
@@ -151,7 +147,7 @@ const AdminPanel: React.FC = () => {
                       </td>
                     </tr>
                   ))}
-                  {activeTab === 'locations' && locations.map(loc => (
+                  {activeTab === 'locations' && locations && locations.map(loc => (
                     <tr key={loc.id} className="hover:bg-white/5 transition-colors group">
                       <td className="px-8 py-6">
                         <div className="font-bold text-sm">{loc.name}</div>

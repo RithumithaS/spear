@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { db, auth } from '../firebase';
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { locationApi } from '../services/api';
 import { ShootingLocation } from '../types';
 import { motion } from 'motion/react';
 import { MapPin, DollarSign, Plus, Search, Filter, Star, Info } from 'lucide-react';
@@ -17,13 +17,14 @@ const Locations: React.FC = () => {
   }, []);
 
   const fetchLocations = async () => {
-    const querySnapshot = await getDocs(collection(db, 'locations'));
-    const items: ShootingLocation[] = [];
-    querySnapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...doc.data() } as ShootingLocation);
-    });
-    setLocations(items);
-    setLoading(false);
+    try {
+      const data = await locationApi.getAll();
+      setLocations(data as ShootingLocation[]);
+    } catch (error) {
+      console.error("Error fetching locations:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredLocations = locations.filter(loc => 
