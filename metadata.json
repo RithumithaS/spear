@@ -1,0 +1,9 @@
+{
+  "name": "SPEAR",
+  "description": "A cine-industry networking platform for professionals to connect, showcase portfolios, find jobs, and book shooting locations.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

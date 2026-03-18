@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "description": "Email address" },
+        "role": { "type": "string", "enum": ["USER", "ADMIN", "DIRECTOR", "PRODUCTION_HOUSE"], "description": "User role" },
+        "bio": { "type": "string", "description": "Short bio" },
+        "skills": { "type": "array", "items": { "type": "string" }, "description": "List of skills" },
+        "profileImage": { "type": "string", "description": "Profile image URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation date" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Portfolio": {
+      "title": "Portfolio",
+      "description": "User portfolio item",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User ID" },
+        "title": { "type": "string", "description": "Item title" },
+        "description": { "type": "string", "description": "Item description" },
+        "mediaUrl": { "type": "string", "description": "Media URL (image/video)" },
+        "mediaType": { "type": "string", "enum": ["image", "video"], "description": "Type of media" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation date" }
+      },
+      "required": ["userId", "title", "mediaUrl", "mediaType"]
+    },
+    "Connection": {
+      "title": "Connection",
+      "description": "Networking connection between users",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string", "description": "Sender user ID" },
+        "receiverId": { "type": "string", "description": "Receiver user ID" },
+        "status": { "type": "string", "enum": ["PENDING", "ACCEPTED", "REJECTED"], "description": "Connection status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Request date" }
+      },
+      "required": ["senderId", "receiverId", "status"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Job posting",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Job title" },
+        "description": { "type": "string", "description": "Job description" },
+        "postedBy": { "type": "string", "description": "User ID of poster" },
+        "roleRequired": { "type": "string", "description": "Role required" },
+        "location": { "type": "string", "description": "Job location" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Posting date" }
+      },
+      "required": ["title", "description", "postedBy", "roleRequired"]
+    },
+    "Application": {
+      "title": "Application",
+      "description": "Job application",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Applicant user ID" },
+        "jobId": { "type": "string", "description": "Job ID" },
+        "status": { "type": "string", "enum": ["APPLIED", "SELECTED", "REJECTED"], "description": "Application status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Application date" }
+      },
+      "required": ["userId", "jobId", "status"]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "Rental shooting location",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Location name" },
+        "address": { "type": "string", "description": "Full address" },
+        "pricePerDay": { "type": "number", "description": "Price per day" },
+        "ownerId": { "type": "string", "description": "Owner user ID" },
+        "imageUrl": { "type": "string", "description": "Image URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Listing date" }
+      },
+      "required": ["name", "address", "pricePerDay", "ownerId"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string", "description": "Sender user ID" },
+        "receiverId": { "type": "string", "description": "Receiver user ID" },
+        "content": { "type": "string", "description": "Message content" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Sent timestamp" }
+      },
+      "required": ["senderId", "receiverId", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/portfolios/{portfolioId}": { "schema": "Portfolio", "description": "Portfolio items" },
+    "/connections/{connectionId}": { "schema": "Connection", "description": "Networking connections" },
+    "/jobs/{jobId}": { "schema": "Job", "description": "Job postings" },
+    "/applications/{applicationId}": { "schema": "Application", "description": "Job applications" },
+    "/locations/{locationId}": { "schema": "Location", "description": "Rental locations" },
+    "/messages/{messageId}": { "schema": "Message", "description": "Direct messages" }
+  }
+}

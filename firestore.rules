@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, name, email, role, bio, skills, profileImage, createdAt
+    //
+    // Collection: portfolios
+    // Fields: userId, title, description, mediaUrl, mediaType, createdAt
+    //
+    // Collection: connections
+    // Fields: senderId, receiverId, status, createdAt
+    //
+    // Collection: jobs
+    // Fields: title, description, postedBy, roleRequired, location, createdAt
+    //
+    // Collection: applications
+    // Fields: userId, jobId, status, createdAt
+    //
+    // Collection: locations
+    // Fields: name, address, pricePerDay, ownerId, imageUrl, createdAt
+    //
+    // Collection: messages
+    // Fields: senderId, receiverId, content, timestamp
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN' ||
+         (request.auth.token.email == "mitharithu16@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid is string && data.name is string && data.email is string &&
+             data.role in ['USER', 'ADMIN', 'DIRECTOR', 'PRODUCTION_HOUSE'];
+    }
+
+    function isValidPortfolio(data) {
+      return data.keys().hasAll(['userId', 'title', 'mediaUrl', 'mediaType']) &&
+             data.userId is string && data.title is string && data.mediaUrl is string &&
+             data.mediaType in ['image', 'video'];
+    }
+
+    function isValidConnection(data) {
+      return data.keys().hasAll(['senderId', 'receiverId', 'status']) &&
+             data.senderId is string && data.receiverId is string &&
+             data.status in ['PENDING', 'ACCEPTED', 'REJECTED'];
+    }
+
+    function isValidJob(data) {
+      return data.keys().hasAll(['title', 'description', 'postedBy', 'roleRequired']) &&
+             data.title is string && data.description is string && data.postedBy is string;
+    }
+
+    function isValidLocation(data) {
+      return data.keys().hasAll(['name', 'address', 'pricePerDay', 'ownerId']) &&
+             data.name is string && data.address is string && data.pricePerDay is number;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['senderId', 'receiverId', 'content']) &&
+             data.senderId is string && data.receiverId is string && data.content is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /portfolios/{portfolioId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidPortfolio(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin()) && isValidPortfolio(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
+
+    match /connections/{connectionId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.senderId) && isValidConnection(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.receiverId) || isOwner(resource.data.senderId) || isAdmin()) && isValidConnection(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId) || isAdmin());
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isOwner(request.resource.data.postedBy) || isAdmin()) && isValidJob(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.postedBy) || isAdmin()) && isValidJob(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.postedBy) || isAdmin());
+    }
+
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/jobs/$(resource.data.jobId)).data.postedBy) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/jobs/$(resource.data.jobId)).data.postedBy) || isAdmin());
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
+
+    match /locations/{locationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isOwner(request.resource.data.ownerId) || isAdmin()) && isValidLocation(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || isAdmin()) && isValidLocation(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.ownerId) || isAdmin());
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId));
+      allow create: if isAuthenticated() && isOwner(request.resource.data.senderId) && isValidMessage(request.resource.data);
+      allow update: if false; // Messages are immutable
+      allow delete: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId));
+    }
+  }
+}
