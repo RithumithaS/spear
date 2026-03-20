@@ -25,7 +25,6 @@ const JobNew: React.FC = () => {
         roleRequired,
         location,
         postedBy: user.uid,
-        createdAt: new Date().toISOString(),
       });
       navigate('/jobs');
     } catch (error) {
@@ -38,69 +37,73 @@ const JobNew: React.FC = () => {
   return (
     <Layout>
       <div className="max-w-3xl mx-auto px-4 py-12">
-        <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-white/40 hover:text-white mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
+        <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-slate-500 font-medium hover:text-emerald-600 mb-8 transition-colors group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Opportunities</span>
         </button>
 
-        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-8 md:p-12">
-          <h1 className="text-3xl font-black tracking-tighter uppercase mb-8">Post a <span className="text-emerald-500">Job</span></h1>
+        <div className="bg-white border border-slate-200 rounded-[2rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none opacity-50" />
           
-          <form onSubmit={handleSave} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-white/40">Job Title</label>
-              <div className="relative">
-                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 mb-10 relative z-10">
+            Post a <span className="text-emerald-600">Job</span>
+          </h1>
+          
+          <form onSubmit={handleSave} className="space-y-8 relative z-10">
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Job Title</label>
+              <div className="relative group shadow-sm rounded-xl">
+                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
                   placeholder="e.g. Lead Actor for Short Film"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-white/40">Role Required</label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Role Required</label>
+              <div className="relative group shadow-sm rounded-xl">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                 <input
                   type="text"
                   value={roleRequired}
                   onChange={(e) => setRoleRequired(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
                   placeholder="e.g. Cinematographer"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-white/40">Location</label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Location</label>
+              <div className="relative group shadow-sm rounded-xl">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
                   placeholder="e.g. Mumbai, India"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-white/40">Description</label>
-              <div className="relative">
-                <FileText className="absolute left-4 top-4 w-5 h-5 text-white/20" />
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Description</label>
+              <div className="relative group shadow-sm rounded-xl">
+                <FileText className="absolute left-4 top-4 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={6}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
                   placeholder="Describe the project and requirements..."
                   required
                 />
@@ -110,7 +113,7 @@ const JobNew: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-500 text-black font-bold py-4 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-md hover:bg-emerald-700 hover:shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.98] mt-4"
             >
               <Save className="w-5 h-5" />
               <span>{loading ? 'Posting...' : 'Post Job'}</span>

@@ -1,153 +1,265 @@
-import { auth } from '../firebase';
+import { db, auth } from '../firebase';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  addDoc, 
+  or,
+  serverTimestamp
+} from 'firebase/firestore';
 
-// Using Vite's import.meta.env for environment variables
-// VITE_API_URL should be set in Vercel to your deployed Spring Boot URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
-// Helper to get Firebase ID token to send to Spring Boot
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const user = auth.currentUser;
-  if (!user) {
-    // If not authenticated, we can still make the request (Spring Security might block it, which is correct)
-    return { 'Content-Type': 'application/json' };
-  }
-
-  // Force refresh the token to ensure it's valid, then append to Headers
-  const token = await user.getIdToken();
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  };
-}
-
-// Global hook to make API requests with authentication headers
-async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const headers = await getAuthHeaders();
-  
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'An error occurred';
-      try {
-        const errorData = await response.text();
-        errorMessage = errorData || response.statusText;
-      } catch (e) {
-        errorMessage = response.statusText;
-      }
-      throw new Error(`API Error ${response.status}: ${errorMessage}`);
-    }
-
-    // Handle 204 No Content for delete operations
-    if (response.status === 204 || response.status === 202) {
-      return undefined as T;
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error);
-    throw error;
-  }
-}
-
-// ==================== USER API ====================
 export const userApi = {
-  create: (user: any) =>
-    apiRequest('/api/users', { method: 'POST', body: JSON.stringify(user) }),
+  create: async (user: any) => {
+    await setDoc(doc(db, 'users', user.uid), user);
+    return user;
+  },
 
-  getByUid: (uid: string) =>
-    apiRequest(`/api/users/${uid}`),
+  getByUid: async (uid: string) => {
+    const docRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) return docSnap.data();
+    return null;
+  },
 
-  getAll: (excludeUid?: string) =>
-    apiRequest(`/api/users${excludeUid ? `?excludeUid=${excludeUid}` : ''}`),
+  getAll: async (excludeUid?: string) => {
+    const snap = await getDocs(collection(db, 'users'));
+    let users = snap.docs.map(d => d.data());
+    if (excludeUid) {
+      users = users.filter(u => u.uid !== excludeUid);
+    }
+    return users;
+  },
 
-  update: (uid: string, data: any) =>
-    apiRequest(`/api/users/${uid}`, { method: 'PUT', body: JSON.stringify(data) }),
+  update: async (uid: string, data: any) => {
+    const docRef = doc(db, 'users', uid);
+    await updateDoc(docRef, data);
+    const snap = await getDoc(docRef);
+    return snap.data();
+  },
 
-  delete: (uid: string) =>
-    apiRequest(`/api/users/${uid}`, { method: 'DELETE' }),
+  delete: async (uid: string) => {
+    await deleteDoc(doc(db, 'users', uid));
+  },
 };
 
-// ==================== JOBS API ====================
 export const jobApi = {
-  create: (job: any) =>
-    apiRequest('/api/jobs', { method: 'POST', body: JSON.stringify(job) }),
+  create: async (job: any) => {
+    const docRef = await addDoc(collection(db, 'jobs'), {
+      ...job,
+      createdAt: new Date().toISOString()
+    });
+    const snap = await getDoc(docRef);
+    return { id: docRef.id, ...snap.data() };
+  },
 
-  getAll: (search?: string) =>
-    apiRequest(`/api/jobs${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  getAll: async (search?: string) => {
+    const q = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const jobs = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+    
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      return jobs.filter(j => 
+        j.title?.toLowerCase().includes(lowerSearch) || 
+        j.description?.toLowerCase().includes(lowerSearch) ||
+        j.roleRequired?.toLowerCase().includes(lowerSearch)
+      );
+    }
+    return jobs;
+  },
 
-  getById: (id: string) =>
-    apiRequest(`/api/jobs/${id}`),
+  getById: async (id: string) => {
+    const snap = await getDoc(doc(db, 'jobs', id));
+    if (snap.exists()) return { id: snap.id, ...snap.data() };
+    return null;
+  },
 
-  delete: (id: string) =>
-    apiRequest(`/api/jobs/${id}`, { method: 'DELETE' }),
+  delete: async (id: string) => {
+    await deleteDoc(doc(db, 'jobs', id));
+  },
 };
 
-// ==================== CONNECTIONS API ====================
 export const connectionApi = {
-  send: (connection: any) =>
-    apiRequest('/api/connections', { method: 'POST', body: JSON.stringify(connection) }),
+  send: async (connection: any) => {
+    const docRef = await addDoc(collection(db, 'connections'), {
+      ...connection,
+      status: 'PENDING',
+      createdAt: new Date().toISOString()
+    });
+    return { id: docRef.id, ...connection, status: 'PENDING' };
+  },
 
-  getUserConnections: (userId: string) =>
-    apiRequest(`/api/connections/user/${userId}`),
+  getUserConnections: async (userId: string) => {
+    const q1 = query(collection(db, 'connections'), where('senderId', '==', userId));
+    const q2 = query(collection(db, 'connections'), where('receiverId', '==', userId));
+    
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    const map = new Map();
+    snap1.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+    snap2.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+    
+    return Array.from(map.values());
+  },
 
-  getPending: (userId: string) =>
-    apiRequest(`/api/connections/pending/${userId}`),
+  getPending: async (userId: string) => {
+    const q = query(
+      collection(db, 'connections'), 
+      where('receiverId', '==', userId),
+      where('status', '==', 'PENDING')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
 
-  accept: (id: string) =>
-    apiRequest(`/api/connections/${id}/accept`, { method: 'PUT' }),
+  accept: async (id: string) => {
+    await updateDoc(doc(db, 'connections', id), { status: 'ACCEPTED' });
+  },
 
-  reject: (id: string) =>
-    apiRequest(`/api/connections/${id}/reject`, { method: 'PUT' }),
+  reject: async (id: string) => {
+    await updateDoc(doc(db, 'connections', id), { status: 'REJECTED' });
+  },
 };
 
-// ==================== MESSAGES API ====================
 export const messageApi = {
-  send: (message: any) =>
-    apiRequest('/api/messages', { method: 'POST', body: JSON.stringify(message) }),
+  send: async (message: any) => {
+    const docRef = await addDoc(collection(db, 'messages'), {
+      ...message,
+      timestamp: new Date().toISOString()
+    });
+    return { id: docRef.id, ...message };
+  },
 
-  getConversation: (userId1: string, userId2: string) =>
-    apiRequest(`/api/messages/conversation?userId1=${userId1}&userId2=${userId2}`),
+  getConversation: async (userId1: string, userId2: string) => {
+    // Firestore lacks native OR with inequalities efficiently easily without composite indexes
+    // Fetching both permutations
+    const q1 = query(collection(db, 'messages'), where('senderId', '==', userId1), where('receiverId', '==', userId2));
+    const q2 = query(collection(db, 'messages'), where('senderId', '==', userId2), where('receiverId', '==', userId1));
+    
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    let messages = [...snap1.docs, ...snap2.docs].map(d => ({ id: d.id, ...d.data() })) as any[];
+    
+    messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return messages;
+  },
 
-  getChatPartners: (userId: string) =>
-    apiRequest(`/api/messages/partners/${userId}`),
+  getChatPartners: async (userId: string) => {
+    const q1 = query(collection(db, 'messages'), where('senderId', '==', userId));
+    const q2 = query(collection(db, 'messages'), where('receiverId', '==', userId));
+    
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    const partnerIds = new Set<string>();
+    
+    snap1.docs.forEach(d => partnerIds.add(d.data().receiverId));
+    snap2.docs.forEach(d => partnerIds.add(d.data().senderId));
+    
+    if (partnerIds.size === 0) return [];
+    
+    // Fetch users (safely chunk in real app, here we fetch all users and filter)
+    const allUsers = await userApi.getAll();
+    return allUsers.filter((u: any) => partnerIds.has(u.uid));
+  },
 };
 
-// ==================== LOCATIONS API ====================
 export const locationApi = {
-  create: (location: any) =>
-    apiRequest('/api/locations', { method: 'POST', body: JSON.stringify(location) }),
+  create: async (location: any) => {
+    const docRef = await addDoc(collection(db, 'locations'), {
+      ...location,
+      createdAt: new Date().toISOString()
+    });
+    return { id: docRef.id, ...location };
+  },
 
-  getAll: () =>
-    apiRequest('/api/locations'),
+  getAll: async () => {
+    const snap = await getDocs(query(collection(db, 'locations'), orderBy('createdAt', 'desc')));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
 
-  delete: (id: string) =>
-    apiRequest(`/api/locations/${id}`, { method: 'DELETE' }),
+  delete: async (id: string) => {
+    await deleteDoc(doc(db, 'locations', id));
+  },
 };
 
-// ==================== APPLICATIONS API ====================
-export const applicationApi = {
-  apply: (application: any) =>
-    apiRequest('/api/applications', { method: 'POST', body: JSON.stringify(application) }),
-
-  getByUser: (userId: string) =>
-    apiRequest(`/api/applications/user/${userId}`),
-
-  getByJob: (jobId: string) =>
-    apiRequest(`/api/applications/job/${jobId}`),
-};
-
-// ==================== PORTFOLIOS API ====================
 export const portfolioApi = {
-  create: (portfolio: any) =>
-    apiRequest('/api/portfolios', { method: 'POST', body: JSON.stringify(portfolio) }),
+  create: async (portfolio: any) => {
+    const docRef = await addDoc(collection(db, 'portfolios'), {
+      ...portfolio,
+      createdAt: new Date().toISOString()
+    });
+    return { id: docRef.id, ...portfolio };
+  },
 
-  getByUserId: (userId: string) =>
-    apiRequest(`/api/portfolios/user/${userId}`),
+  getByUserId: async (userId: string) => {
+    const q = query(collection(db, 'portfolios'), where('userId', '==', userId));
+    const snap = await getDocs(q);
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return items;
+  },
 
-  delete: (id: string) =>
-    apiRequest(`/api/portfolios/${id}`, { method: 'DELETE' }),
+  delete: async (id: string) => {
+    await deleteDoc(doc(db, 'portfolios', id));
+  },
+};
+
+export const applicationApi = {
+  apply: async (application: any) => {
+    // Check if already applied
+    const q = query(collection(db, 'applications'), where('userId', '==', application.userId), where('jobId', '==', application.jobId));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      throw new Error("Already applied for this job.");
+    }
+
+    const docRef = await addDoc(collection(db, 'applications'), {
+      ...application,
+      status: 'APPLIED',
+      createdAt: new Date().toISOString()
+    });
+    return { id: docRef.id, ...application };
+  },
+
+  getByUser: async (userId: string) => {
+    const q = query(collection(db, 'applications'), where('userId', '==', userId));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  getByJob: async (jobId: string) => {
+    const q = query(collection(db, 'applications'), where('jobId', '==', jobId));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+};
+
+export const statsApi = {
+  getStats: async (userId?: string) => {
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const jobsSnap = await getDocs(collection(db, 'jobs'));
+      const locsSnap = await getDocs(collection(db, 'locations'));
+      
+      let userConnections = 0;
+      if (userId) {
+        const conns = await connectionApi.getUserConnections(userId);
+        userConnections = conns.filter(c => c.status === 'ACCEPTED').length;
+      }
+      
+      return {
+        totalUsers: usersSnap.size,
+        totalJobs: jobsSnap.size,
+        totalLocations: locsSnap.size,
+        userConnections,
+      };
+    } catch (e) {
+      console.error(e);
+      return { totalUsers: 0, totalJobs: 0, totalLocations: 0, userConnections: 0 };
+    }
+  }
 };
