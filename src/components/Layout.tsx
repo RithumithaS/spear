@@ -36,10 +36,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div>
               <h4 className="text-sm font-bold uppercase tracking-widest mb-6">Platform</h4>
               <ul className="space-y-4 text-sm text-white/40">
-                <li><Link to="/directory" className="hover:text-emerald-400 transition-colors">Directory</Link></li>
+                <li><Link to="/connections" className="hover:text-emerald-400 transition-colors">Connections</Link></li>
                 <li><Link to="/jobs" className="hover:text-emerald-400 transition-colors">Jobs</Link></li>
                 <li><Link to="/locations" className="hover:text-emerald-400 transition-colors">Locations</Link></li>
-                <li><Link to="/connections" className="hover:text-emerald-400 transition-colors">Connections</Link></li>
               </ul>
             </div>
             <div>

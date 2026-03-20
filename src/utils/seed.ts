@@ -1,11 +1,17 @@
-import { collection, addDoc, getDocs, query, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { jobApi, locationApi } from '../services/api';
+
+let seeded = false;
 
 export async function seedInitialData() {
+  // Only attempt seed once per session
+  if (seeded) return;
+  seeded = true;
+
   try {
-    const jobsSnap = await getDocs(query(collection(db, 'jobs'), limit(1)));
-    if (jobsSnap.empty) {
-      console.log("Seeding initial jobs...");
+    // Check if jobs already exist
+    const existingJobs = await jobApi.getAll() as any[];
+    if (existingJobs.length === 0) {
+      console.log("Seeding initial jobs via API...");
       const jobs = [
         {
           title: "Lead Actor for Sci-Fi Short",
@@ -25,13 +31,14 @@ export async function seedInitialData() {
         }
       ];
       for (const job of jobs) {
-        await addDoc(collection(db, 'jobs'), job);
+        await jobApi.create(job);
       }
     }
 
-    const locsSnap = await getDocs(query(collection(db, 'locations'), limit(1)));
-    if (locsSnap.empty) {
-      console.log("Seeding initial locations...");
+    // Check if locations already exist
+    const existingLocations = await locationApi.getAll() as any[];
+    if (existingLocations.length === 0) {
+      console.log("Seeding initial locations via API...");
       const locations = [
         {
           name: "Modern Industrial Loft",
@@ -51,7 +58,7 @@ export async function seedInitialData() {
         }
       ];
       for (const loc of locations) {
-        await addDoc(collection(db, 'locations'), loc);
+        await locationApi.create(loc);
       }
     }
   } catch (error) {

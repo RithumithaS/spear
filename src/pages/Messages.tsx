@@ -1,19 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import { auth } from '../firebase';
-import { messageApi } from '../services/api';
+import { messageApi, connectionApi, userApi } from '../services/api';
 import { ChatMessage, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { Send, User, Search, MessageSquare } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Send, User, Search, MessageSquare, Users } from 'lucide-react';
 
 const Messages: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [chats, setChats] = useState<UserProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Check for preselected user from navigation state
+  useEffect(() => {
+    const state = location.state as { preselectedUser?: UserProfile } | null;
+    if (state?.preselectedUser) {
+      setSelectedUser(state.preselectedUser);
+    }
+  }, [location.state]);
 
   // Fetch chat partners once
   useEffect(() => {
@@ -22,14 +33,12 @@ const Messages: React.FC = () => {
     }
   }, [user]);
 
-  // Fallback to polling for messages since we removed real-time Firestore listener
+  // Polling for messages
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
     if (user && selectedUser) {
-      fetchMessages(); // initial fetch
-
-      // Poll every 3 seconds
+      fetchMessages();
       intervalId = setInterval(() => {
         fetchMessages();
       }, 3000);
@@ -44,7 +53,17 @@ const Messages: React.FC = () => {
     try {
       if (!user) return;
       const partners = await messageApi.getChatPartners(user.uid);
-      setChats(partners as UserProfile[]);
+      const partnerList = partners as UserProfile[];
+      setChats(partnerList);
+
+      // If we have a preselected user that's not already in the chat list, add them
+      const state = location.state as { preselectedUser?: UserProfile } | null;
+      if (state?.preselectedUser) {
+        const exists = partnerList.some(p => p.uid === state.preselectedUser!.uid);
+        if (!exists) {
+          setChats([state.preselectedUser, ...partnerList]);
+        }
+      }
     } catch (error) {
       console.error("Error fetching chat partners:", error);
     } finally {
@@ -57,7 +76,6 @@ const Messages: React.FC = () => {
       if (!user || !selectedUser) return;
       const msgs = await messageApi.getConversation(user.uid, selectedUser.uid);
       setMessages(msgs as ChatMessage[]);
-      // Scroll smoothly to bottom on new messages
       setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -76,11 +94,15 @@ const Messages: React.FC = () => {
         timestamp: new Date().toISOString()
       });
       setNewMessage('');
-      fetchMessages(); // Optimistic refresh
+      fetchMessages();
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
+
+  const filteredChats = chats.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!user) return null;
 
@@ -97,6 +119,8 @@ const Messages: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search chats..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -104,7 +128,7 @@ const Messages: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {loading ? (
                 <div className="p-4 text-center text-white/40">Loading chats...</div>
-              ) : chats.length > 0 ? chats.map(chatUser => (
+              ) : filteredChats.length > 0 ? filteredChats.map(chatUser => (
                 <button
                   key={chatUser.uid}
                   onClick={() => setSelectedUser(chatUser)}
@@ -123,7 +147,11 @@ const Messages: React.FC = () => {
                   </div>
                 </button>
               )) : (
-                <div className="text-center py-12 text-white/20 text-xs uppercase tracking-widest">No active chats</div>
+                <div className="text-center py-12">
+                  <Users className="w-8 h-8 text-white/10 mx-auto mb-3" />
+                  <div className="text-white/20 text-xs uppercase tracking-widest mb-2">No active chats</div>
+                  <p className="text-white/10 text-[10px]">Connect with people first, then start chatting!</p>
+                </div>
               )}
             </div>
           </div>
@@ -139,12 +167,17 @@ const Messages: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-bold">{selectedUser.name}</div>
-                      <div className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Online</div>
+                      <div className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">{selectedUser.role?.replace('_', ' ')}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {messages.length === 0 && (
+                    <div className="text-center py-12 text-white/20 text-sm">
+                      No messages yet. Say hello! 👋
+                    </div>
+                  )}
                   {messages.map((msg, idx) => (
                     <div
                       key={idx}

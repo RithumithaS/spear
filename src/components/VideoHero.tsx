@@ -70,7 +70,7 @@ const VideoHero: React.FC = () => {
             <Link to="/register" className="px-8 py-4 bg-emerald-500 text-black font-bold rounded-full hover:bg-emerald-400 transition-all transform hover:scale-105">
               Get Started
             </Link>
-            <Link to="/directory" className="px-8 py-4 border border-white/20 text-white font-bold rounded-full hover:bg-white/10 transition-all">
+            <Link to="/connections" className="px-8 py-4 border border-white/20 text-white font-bold rounded-full hover:bg-white/10 transition-all">
               Explore Talent
             </Link>
           </div>

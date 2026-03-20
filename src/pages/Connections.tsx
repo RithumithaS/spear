@@ -5,9 +5,10 @@ import { userApi, connectionApi } from '../services/api';
 import { UserProfile, Connection } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, UserPlus, Check, X, MessageSquare, Search, Filter, User, Film } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Connections: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,11 +22,9 @@ const Connections: React.FC = () => {
     setLoading(true);
     try {
       if (auth.currentUser) {
-        // Fetch all users except current
         const usersList = await userApi.getAll(auth.currentUser.uid);
         setUsers(usersList as UserProfile[]);
 
-        // Fetch connections for current user
         const connList = await connectionApi.getUserConnections(auth.currentUser.uid);
         setConnections(connList as Connection[]);
       }
@@ -58,6 +57,19 @@ const Connections: React.FC = () => {
     } catch (error) {
       console.error("Error accepting connection:", error);
     }
+  };
+
+  const handleReject = async (connectionId: string) => {
+    try {
+      await connectionApi.reject(connectionId);
+      fetchData();
+    } catch (error) {
+      console.error("Error rejecting connection:", error);
+    }
+  };
+
+  const handleMessage = (userProfile: UserProfile) => {
+    navigate('/messages', { state: { preselectedUser: userProfile } });
   };
 
   const getConnectionStatus = (userId: string) => {
@@ -114,7 +126,7 @@ const Connections: React.FC = () => {
                       <button onClick={() => handleAccept(req.id!)} className="p-2 bg-emerald-500 text-black rounded-lg hover:bg-emerald-400 transition-colors">
                         <Check className="w-4 h-4" />
                       </button>
-                      <button className="p-2 bg-white/5 border border-white/10 text-white rounded-lg hover:bg-white/10 transition-colors">
+                      <button onClick={() => handleReject(req.id!)} className="p-2 bg-white/5 border border-white/10 text-white rounded-lg hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-colors">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
@@ -174,7 +186,10 @@ const Connections: React.FC = () => {
                   <div className="w-full mt-auto">
                     {status === 'ACCEPTED' ? (
                       <div className="flex items-center space-x-2">
-                        <button className="flex-1 py-2 bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1">
+                        <button
+                          onClick={() => handleMessage(u)}
+                          className="flex-1 py-2 bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1 hover:bg-white/10 transition-colors"
+                        >
                           <MessageSquare className="w-3 h-3" />
                           <span>Message</span>
                         </button>

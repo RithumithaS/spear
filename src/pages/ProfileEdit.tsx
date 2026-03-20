@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, FileText, Code, Save, ArrowLeft } from 'lucide-react';
 
 const ProfileEdit: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -31,6 +31,8 @@ const ProfileEdit: React.FC = () => {
         bio,
         skills: skills.split(',').map(s => s.trim()).filter(s => s !== ''),
       });
+      await refreshProfile();
+      
       navigate(`/profile/${user.uid}`);
     } catch (error) {
       console.error("Error updating profile:", error);

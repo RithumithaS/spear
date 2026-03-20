@@ -9,6 +9,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -46,10 +48,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
+  const refreshProfile = async () => {
+    if (user) {
+      try {
+        const fetchedProfile = await userApi.getByUid(user.uid);
+        if (fetchedProfile) {
+          setProfile(fetchedProfile as UserProfile);
+        }
+      } catch (error) {
+        console.error("Error refreshing profile:", error);
+      }
+    }
+  };
+
   const isAdmin = profile?.role === 'ADMIN' || user?.email === 'mitharithu16@gmail.com';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
