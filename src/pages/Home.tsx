@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import VideoHero from '../components/VideoHero';
 import Layout from '../components/Layout';
 import { motion } from 'motion/react';
 import { Users, Briefcase, MapPin, Play, ArrowRight, UserPlus, Film, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { seedInitialData } from '../utils/seed';
 
 const Home: React.FC = () => {
+  useEffect(() => {
+    seedInitialData();
+  }, []);
+
   const features = [
     {
       title: "Cine-Networking",
