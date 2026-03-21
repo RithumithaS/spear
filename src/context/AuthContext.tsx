@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const isAdmin = true; // Temporary for testing: profile?.role === 'ADMIN' || user?.email === 'mitharithu16@gmail.com';
+  const isAdmin = profile?.role === 'ADMIN';
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, isAdmin, refreshProfile }}>

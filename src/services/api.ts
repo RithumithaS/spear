@@ -238,6 +238,31 @@ export const applicationApi = {
   },
 };
 
+export const reportApi = {
+  create: async (report: any) => {
+    const docRef = await addDoc(collection(db, 'reports'), {
+      ...report,
+      status: 'PENDING',
+      createdAt: new Date().toISOString()
+    });
+    return { id: docRef.id, ...report, status: 'PENDING' };
+  },
+
+  getAll: async () => {
+    const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  updateStatus: async (id: string, status: string) => {
+    await updateDoc(doc(db, 'reports', id), { status });
+  },
+
+  delete: async (id: string) => {
+    await deleteDoc(doc(db, 'reports', id));
+  },
+};
+
 export const statsApi = {
   getStats: async (userId?: string) => {
     try {
@@ -250,16 +275,78 @@ export const statsApi = {
         const conns = await connectionApi.getUserConnections(userId);
         userConnections = conns.filter(c => c.status === 'ACCEPTED').length;
       }
+
+      let totalReports = 0;
+      try {
+        const reportsSnap = await getDocs(collection(db, 'reports'));
+        totalReports = reportsSnap.size;
+      } catch (_) { /* non-admin can't read */ }
       
       return {
         totalUsers: usersSnap.size,
         totalJobs: jobsSnap.size,
         totalLocations: locsSnap.size,
         userConnections,
+        totalReports,
       };
     } catch (e) {
       console.error(e);
-      return { totalUsers: 0, totalJobs: 0, totalLocations: 0, userConnections: 0 };
+      return { totalUsers: 0, totalJobs: 0, totalLocations: 0, userConnections: 0, totalReports: 0 };
     }
   }
+};
+
+// Admin API - calls privileged edge functions powered by Firebase Admin SDK
+const ADMIN_API_BASE = import.meta.env.VITE_ADMIN_API_URL || '/api/admin';
+
+export const adminApi = {
+  deleteUserAuth: async (uid: string) => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Not authenticated');
+    const res = await fetch(`${ADMIN_API_BASE}/delete-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ uid }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to delete user auth' }));
+      throw new Error(err.error || 'Failed to delete user auth');
+    }
+    return res.json();
+  },
+
+  getAuthUsers: async () => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Not authenticated');
+    const res = await fetch(`${ADMIN_API_BASE}/list-users`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch auth users');
+    return res.json();
+  },
+
+  setUserRole: async (uid: string, role: string) => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Not authenticated');
+    const res = await fetch(`${ADMIN_API_BASE}/set-role`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ uid, role }),
+    });
+    if (!res.ok) throw new Error('Failed to set role');
+    return res.json();
+  },
+
+  disableUser: async (uid: string, disabled: boolean) => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Not authenticated');
+    const res = await fetch(`${ADMIN_API_BASE}/disable-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ uid, disabled }),
+    });
+    if (!res.ok) throw new Error('Failed to update user status');
+    return res.json();
+  },
 };

@@ -64,3 +64,13 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
 }
+
+export interface Report {
+  id?: string;
+  type: 'USER' | 'JOB' | 'LOCATION' | 'MESSAGE';
+  targetId: string;
+  reportedBy: string;
+  reason: string;
+  status: 'PENDING' | 'REVIEWED' | 'DISMISSED' | 'ACTION_TAKEN';
+  createdAt: string;
+}

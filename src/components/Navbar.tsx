@@ -21,7 +21,6 @@ const Navbar: React.FC = () => {
     { name: 'Jobs', path: '/jobs', icon: <Briefcase className="w-4 h-4" />, auth: true },
     { name: 'Locations', path: '/locations', icon: <MapPin className="w-4 h-4" />, auth: true },
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-4 h-4" />, auth: true },
-    { name: 'Admin', path: '/admin', icon: <User className="w-4 h-4" />, auth: true, admin: true },
   ];
 
   return (

@@ -24,6 +24,9 @@ service cloud.firestore {
     //
     // Collection: messages
     // Fields: senderId, receiverId, content, timestamp
+    //
+    // Collection: reports
+    // Fields: type, targetId, reportedBy, reason, status, createdAt
 
     // ===============================================================
     // Helper Functions
@@ -75,6 +78,13 @@ service cloud.firestore {
              data.senderId is string && data.receiverId is string && data.content is string;
     }
 
+    function isValidReport(data) {
+      return data.keys().hasAll(['type', 'targetId', 'reportedBy', 'reason', 'status']) &&
+             data.type in ['USER', 'JOB', 'LOCATION', 'MESSAGE'] &&
+             data.reportedBy is string && data.reason is string &&
+             data.status in ['PENDING', 'REVIEWED', 'DISMISSED', 'ACTION_TAKEN'];
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -122,10 +132,17 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId));
+      allow read: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.senderId) && isValidMessage(request.resource.data);
       allow update: if false; // Messages are immutable
-      allow delete: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId));
+      allow delete: if isAuthenticated() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId) || isAdmin());
+    }
+
+    // Reports - Explicitly blocks standard users from reading/writing other people's reports
+    match /reports/{reportId} {
+      allow create: if isAuthenticated() && isOwner(request.resource.data.reportedBy) && isValidReport(request.resource.data);
+      // Standard users CANNOT read reports. Only admins can view, update, and delete them.
+      allow read, update, delete: if isAdmin();
     }
   }
 }
