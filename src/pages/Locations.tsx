@@ -99,7 +99,7 @@ const Locations: React.FC = () => {
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors pr-4">{loc.name}</h3>
                     <div className="flex items-center text-emerald-600 font-black whitespace-nowrap bg-emerald-50 px-3 py-1.5 rounded-xl">
-                      <DollarSign className="w-4 h-4" />
+                      <span className="text-sm mr-1">Rs.</span>
                       <span className="text-lg">{loc.pricePerDay}</span>
                       <span className="text-[10px] text-emerald-700/60 ml-1 uppercase">/ day</span>
                     </div>

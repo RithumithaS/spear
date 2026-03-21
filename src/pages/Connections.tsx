@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { auth } from '../firebase';
 import { userApi, connectionApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { UserProfile, Connection } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, UserPlus, Check, X, MessageSquare, Search, Filter, User, Film, Clock } from 'lucide-react';
@@ -9,25 +10,27 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const Connections: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      if (auth.currentUser) {
-        const usersList = await userApi.getAll(auth.currentUser.uid);
-        setUsers(usersList as UserProfile[]);
+      const usersList = await userApi.getAll(user.uid);
+      setUsers(usersList as UserProfile[]);
 
-        const connList = await connectionApi.getUserConnections(auth.currentUser.uid);
-        setConnections(connList as Connection[]);
-      }
+      const connList = await connectionApi.getUserConnections(user.uid);
+      setConnections(connList as Connection[]);
     } catch (error) {
       console.error("Error fetching connections data:", error);
     } finally {
@@ -80,7 +83,7 @@ const Connections: React.FC = () => {
     u.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const pendingRequests = connections.filter(c => c.receiverId === auth.currentUser?.uid && c.status === 'PENDING');
+  const pendingRequests = connections.filter(c => c.receiverId === user?.uid && c.status === 'PENDING');
 
   return (
     <Layout>

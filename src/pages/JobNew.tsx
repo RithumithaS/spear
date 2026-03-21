@@ -89,7 +89,7 @@ const JobNew: React.FC = () => {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                  placeholder="e.g. Mumbai, India"
+                  placeholder="e.g. Hyderabad, Telangana"
                   required
                 />
               </div>

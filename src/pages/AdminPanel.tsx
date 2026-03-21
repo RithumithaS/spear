@@ -88,16 +88,16 @@ const AdminPanel: React.FC = () => {
           description: "We are casting/hiring for an upcoming blockbuster independent film. Great pay and credits.",
           postedBy: userIds[i % userIds.length],
           roleRequired: ['Actor', 'Camera', 'Editor', 'Sound'][i % 4],
-          location: ['Mumbai', 'Los Angeles', 'London', 'New York'][i % 4],
+          location: ['Mumbai', 'Chennai', 'Hyderabad', 'Bangalore', 'Kolkata', 'Delhi'][i % 6],
           createdAt: new Date().toISOString()
         });
       }
 
       for (let i = 0; i < 20; i++) {
         await locationApi.create({
-          name: `${['Victorian', 'Modern', 'Rustic', 'Sci-Fi'][i % 4]} ${['Mansion', 'Apartment', 'Cabin', 'Studio'][i % 4]}`,
-          address: `${100 + i} Film City, World`,
-          pricePerDay: Number((i + 1) * 100),
+          name: `${['Heritage', 'Modern', 'Rustic', 'Temple'][i % 4]} ${['Bungalow', 'Studio', 'Warehouse', 'Courtyard'][i % 4]}`,
+          address: `${100 + i} Film Nagar, ${['Hyderabad', 'Chennai', 'Mumbai', 'Kolkata'][i % 4]}`,
+          pricePerDay: Number((i + 1) * 2000),
           ownerId: userIds[i % userIds.length],
           imageUrl: `https://picsum.photos/seed/loc${i}/800/600`,
           createdAt: new Date().toISOString()
@@ -465,7 +465,7 @@ const AdminPanel: React.FC = () => {
                           </td>
                           <td className="px-8 py-5">
                             <span className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 text-slate-300 text-sm font-bold rounded-lg inline-flex items-center">
-                              ${loc.pricePerDay}<span className="text-[10px] text-slate-500 uppercase tracking-widest ml-1 translate-y-px">/day</span>
+                              Rs. {loc.pricePerDay}<span className="text-[10px] text-slate-500 uppercase tracking-widest ml-1 translate-y-px">/day</span>
                             </span>
                           </td>
                           <td className="px-8 py-5 text-sm text-slate-400 font-medium">

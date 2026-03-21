@@ -59,7 +59,7 @@ const LocationNew: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                  placeholder="e.g. Victorian Mansion"
+                  placeholder="e.g. Heritage Bungalow"
                   required
                 />
               </div>
@@ -74,22 +74,22 @@ const LocationNew: React.FC = () => {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                  placeholder="e.g. 123 Film City, Mumbai"
+                  placeholder="e.g. Film City, Goregaon, Mumbai"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Price Per Day ($)</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Price Per Day (Rs.)</label>
               <div className="relative group shadow-sm rounded-xl">
-                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold group-focus-within:text-emerald-600 transition-colors">Rs.</div>
                 <input
                   type="number"
                   value={pricePerDay}
                   onChange={(e) => setPricePerDay(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                  placeholder="e.g. 500"
+                  placeholder="e.g. 15000"
                   required
                 />
               </div>
