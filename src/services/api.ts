@@ -219,7 +219,7 @@ export const applicationApi = {
 
     const docRef = await addDoc(collection(db, 'applications'), {
       ...application,
-      status: 'APPLIED',
+      status: 'PENDING',
       createdAt: new Date().toISOString()
     });
     return { id: docRef.id, ...application };
@@ -235,6 +235,10 @@ export const applicationApi = {
     const q = query(collection(db, 'applications'), where('jobId', '==', jobId));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  updateStatus: async (id: string, status: 'SELECTED' | 'REJECTED') => {
+    await updateDoc(doc(db, 'applications', id), { status });
   },
 };
 

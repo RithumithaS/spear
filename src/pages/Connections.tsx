@@ -4,7 +4,7 @@ import { auth } from '../firebase';
 import { userApi, connectionApi } from '../services/api';
 import { UserProfile, Connection } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, UserPlus, Check, X, MessageSquare, Search, Filter, User, Film } from 'lucide-react';
+import { Users, UserPlus, Check, X, MessageSquare, Search, Filter, User, Film, Clock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Connections: React.FC = () => {

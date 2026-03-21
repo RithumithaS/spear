@@ -41,9 +41,14 @@ export interface JobPosting {
 
 export interface JobApplication {
   id?: string;
-  userId: string;
   jobId: string;
-  status: 'APPLIED' | 'SELECTED' | 'REJECTED';
+  userId: string;
+  applicantName: string;
+  applicantEmail: string;
+  bio: string;
+  portfolioLink?: string;
+  message: string;
+  status: 'PENDING' | 'SELECTED' | 'REJECTED';
   createdAt: string;
 }
 

@@ -15,6 +15,8 @@ import LocationNew from './pages/LocationNew';
 import AdminPanel from './pages/AdminPanel';
 import AdminLogin from './pages/AdminLogin';
 import Messages from './pages/Messages';
+import ApplyJob from './pages/ApplyJob';
+import JobApplications from './pages/JobApplications';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -45,6 +47,8 @@ export default function App() {
         <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
         <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
         <Route path="/jobs/new" element={<ProtectedRoute><JobNew /></ProtectedRoute>} />
+        <Route path="/jobs/responses" element={<ProtectedRoute><JobApplications /></ProtectedRoute>} />
+        <Route path="/apply/:id" element={<ProtectedRoute><ApplyJob /></ProtectedRoute>} />
         <Route path="/locations" element={<ProtectedRoute><Locations /></ProtectedRoute>} />
         <Route path="/locations/new" element={<ProtectedRoute><LocationNew /></ProtectedRoute>} />
         <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />

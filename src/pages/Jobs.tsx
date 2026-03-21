@@ -127,13 +127,12 @@ const Jobs: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleApply(job.id!)}
-                  disabled={applying === job.id}
-                  className="w-full py-4 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-emerald-600 hover:text-white hover:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 transition-all disabled:opacity-50 relative z-10"
+                <Link
+                  to={`/apply/${job.id}`}
+                  className="w-full py-4 bg-slate-100 border border-slate-200 text-center text-slate-700 font-bold rounded-xl hover:bg-emerald-600 hover:text-white hover:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 transition-all relative z-10"
                 >
-                  {applying === job.id ? 'Submitting Application...' : 'Apply Now'}
-                </button>
+                  Apply Now
+                </Link>
               </motion.div>
             )) : (
               <div className="col-span-full py-24 flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200 border-dashed shadow-sm">

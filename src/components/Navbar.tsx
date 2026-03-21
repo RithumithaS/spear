@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../firebase';
-import { Film, User, LogOut, Menu, X, Briefcase, Users, MapPin, LayoutDashboard } from 'lucide-react';
+import { Film, User, LogOut, Menu, X, Briefcase, Users, MapPin, LayoutDashboard, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Navbar: React.FC = () => {
@@ -19,6 +19,7 @@ const Navbar: React.FC = () => {
     { name: 'Home', path: '/', icon: <Film className="w-4 h-4" /> },
     { name: 'Connections', path: '/connections', icon: <Users className="w-4 h-4" />, auth: true },
     { name: 'Jobs', path: '/jobs', icon: <Briefcase className="w-4 h-4" />, auth: true },
+    { name: 'Responses', path: '/jobs/responses', icon: <MessageSquare className="w-4 h-4" />, auth: true },
     { name: 'Locations', path: '/locations', icon: <MapPin className="w-4 h-4" />, auth: true },
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-4 h-4" />, auth: true },
   ];
